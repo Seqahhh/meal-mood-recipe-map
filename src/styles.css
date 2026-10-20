@@ -51,6 +51,10 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-star: var(--star);
+  --font-display: 'Fraunces', serif;
+  --font-sans: 'Figtree', sans-serif;
+  --shadow-soft: 0 8px 24px -12px color-mix(in oklab, var(--foreground) 35%, transparent);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -62,26 +66,27 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --radius: 0.75rem;
+  --background: oklch(0.975 0.012 75);
+  --foreground: oklch(0.25 0.03 40);
+  --card: oklch(0.995 0.005 75);
+  --card-foreground: oklch(0.25 0.03 40);
+  --popover: oklch(0.995 0.005 75);
+  --popover-foreground: oklch(0.25 0.03 40);
+  --primary: oklch(0.58 0.14 40);
+  --primary-foreground: oklch(0.99 0.005 75);
+  --secondary: oklch(0.92 0.03 140);
+  --secondary-foreground: oklch(0.3 0.05 140);
+  --muted: oklch(0.93 0.018 70);
+  --muted-foreground: oklch(0.5 0.03 50);
+  --accent: oklch(0.92 0.03 140);
+  --accent-foreground: oklch(0.3 0.05 140);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.88 0.02 70);
+  --input: oklch(0.88 0.02 70);
+  --ring: oklch(0.58 0.14 40);
+  --star: oklch(0.78 0.16 75);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -141,4 +146,19 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+}
+
+@layer base {
+  body { font-family: var(--font-sans); }
+}
+@utility font-display { font-family: var(--font-display); font-weight: 600; }
+@utility shadow-soft { box-shadow: var(--shadow-soft); }
+@layer components {
+  .btn-primary, .btn-ghost, .btn-danger { @apply inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:opacity-40; }
+  .btn-primary { @apply bg-primary text-primary-foreground hover:bg-primary/90; }
+  .btn-danger { @apply bg-destructive text-destructive-foreground hover:bg-destructive/90; }
+  .btn-ghost { @apply border bg-card text-foreground hover:bg-muted; }
+  .input { @apply w-full rounded-lg border bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring; }
+  .field { @apply flex flex-col gap-1.5 text-sm font-medium; }
+  .recipe-card { @apply relative flex min-h-32 flex-col justify-between rounded-2xl border bg-card p-4 text-left shadow-soft transition-transform hover:-translate-y-0.5; }
 }
