@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export type Category = "meal" | "drinks" | "dessert";
 export const CATEGORIES: Category[] = ["meal", "drinks", "dessert"];
 
@@ -13,198 +15,125 @@ export type Recipe = {
   savedAt: string;
 };
 
-const KEY = "recipes.v1";
+type Row = {
+  id: string;
+  category: string;
+  name: string;
+  rating: number;
+  portions: string;
+  ingredients: unknown;
+  steps: unknown;
+  saved_at: string;
+};
 
-export const DEFAULT_RECIPES: Recipe[] = [
-  {
-    id: "default-meal-1",
-    category: "meal",
-    name: "Grandma's Lasagna",
-    rating: 5,
-    portions: "6",
-    ingredients: [
-      { name: "Lasagna sheets", measurement: "g", amount: "250" },
-      { name: "Minced beef", measurement: "g", amount: "500" },
-      { name: "Crushed tomatoes", measurement: "g", amount: "400" },
-      { name: "Grated cheese", measurement: "g", amount: "200" },
-    ],
-    steps: [
-      "Brown the minced beef in a pan.",
-      "Add crushed tomatoes and simmer for 20 minutes.",
-      "Layer sheets, sauce and cheese in a baking dish.",
-      "Bake at 200°C for 30 minutes.",
-    ],
-    savedAt: "2026-10-01T12:00:00.000Z",
-  },
-  {
-    id: "default-meal-2",
-    category: "meal",
-    name: "Chicken Stir Fry",
-    rating: 4,
-    portions: "4",
-    ingredients: [
-      { name: "Chicken breast", measurement: "g", amount: "400" },
-      { name: "Bell peppers", measurement: "pcs", amount: "2" },
-      { name: "Soy sauce", measurement: "tbsp", amount: "3" },
-      { name: "Rice", measurement: "dl", amount: "3" },
-    ],
-    steps: [
-      "Cook the rice according to the package.",
-      "Fry the chicken in a hot wok until golden.",
-      "Add peppers and soy sauce, stir fry 5 minutes.",
-      "Serve over the rice.",
-    ],
-    savedAt: "2026-10-03T12:00:00.000Z",
-  },
-  {
-    id: "default-meal-3",
-    category: "meal",
-    name: "Tomato Soup",
-    rating: 3,
-    portions: "4",
-    ingredients: [
-      { name: "Canned tomatoes", measurement: "g", amount: "800" },
-      { name: "Onion", measurement: "pcs", amount: "1" },
-      { name: "Vegetable stock", measurement: "dl", amount: "5" },
-      { name: "Cream", measurement: "dl", amount: "2" },
-    ],
-    steps: [
-      "Soften the onion in a pot.",
-      "Add tomatoes and stock, simmer 15 minutes.",
-      "Blend until smooth and stir in the cream.",
-    ],
-    savedAt: "2026-10-05T12:00:00.000Z",
-  },
-  {
-    id: "default-drinks-1",
-    category: "drinks",
-    name: "Classic Lemonade",
-    rating: 4,
-    portions: "4",
-    ingredients: [
-      { name: "Lemons", measurement: "pcs", amount: "4" },
-      { name: "Sugar", measurement: "dl", amount: "1" },
-      { name: "Water", measurement: "l", amount: "1" },
-    ],
-    steps: [
-      "Squeeze the lemons.",
-      "Dissolve the sugar in warm water.",
-      "Combine juice and sugar water, chill and serve over ice.",
-    ],
-    savedAt: "2026-10-02T12:00:00.000Z",
-  },
-  {
-    id: "default-drinks-2",
-    category: "drinks",
-    name: "Berry Smoothie",
-    rating: 5,
-    portions: "2",
-    ingredients: [
-      { name: "Frozen berries", measurement: "g", amount: "300" },
-      { name: "Banana", measurement: "pcs", amount: "1" },
-      { name: "Yogurt", measurement: "dl", amount: "2" },
-      { name: "Milk", measurement: "dl", amount: "1" },
-    ],
-    steps: [
-      "Add everything to a blender.",
-      "Blend until smooth.",
-      "Pour into glasses and serve cold.",
-    ],
-    savedAt: "2026-10-04T12:00:00.000Z",
-  },
-  {
-    id: "default-drinks-3",
-    category: "drinks",
-    name: "Hot Chocolate",
-    rating: 4,
-    portions: "2",
-    ingredients: [
-      { name: "Milk", measurement: "dl", amount: "5" },
-      { name: "Cocoa powder", measurement: "tbsp", amount: "2" },
-      { name: "Sugar", measurement: "tbsp", amount: "2" },
-      { name: "Whipped cream", measurement: "dl", amount: "1" },
-    ],
-    steps: [
-      "Warm the milk in a saucepan.",
-      "Whisk in cocoa and sugar until dissolved.",
-      "Top with whipped cream.",
-    ],
-    savedAt: "2026-10-06T12:00:00.000Z",
-  },
-  {
-    id: "default-dessert-1",
-    category: "dessert",
-    name: "Chocolate Brownies",
-    rating: 5,
-    portions: "12",
-    ingredients: [
-      { name: "Dark chocolate", measurement: "g", amount: "200" },
-      { name: "Butter", measurement: "g", amount: "150" },
-      { name: "Sugar", measurement: "dl", amount: "2" },
-      { name: "Eggs", measurement: "pcs", amount: "3" },
-      { name: "Flour", measurement: "dl", amount: "1.5" },
-    ],
-    steps: [
-      "Melt chocolate and butter together.",
-      "Whisk in sugar and eggs, then fold in flour.",
-      "Bake at 175°C for 25 minutes.",
-    ],
-    savedAt: "2026-10-07T12:00:00.000Z",
-  },
-  {
-    id: "default-dessert-2",
-    category: "dessert",
-    name: "Pancakes",
-    rating: 4,
-    portions: "8",
-    ingredients: [
-      { name: "Flour", measurement: "dl", amount: "3" },
-      { name: "Milk", measurement: "dl", amount: "6" },
-      { name: "Eggs", measurement: "pcs", amount: "2" },
-      { name: "Butter", measurement: "tbsp", amount: "2" },
-    ],
-    steps: [
-      "Whisk flour, milk and eggs into a smooth batter.",
-      "Fry thin pancakes in butter over medium heat.",
-      "Serve with jam or sugar.",
-    ],
-    savedAt: "2026-10-08T12:00:00.000Z",
-  },
-  {
-    id: "default-dessert-3",
-    category: "dessert",
-    name: "Apple Pie",
-    rating: 4,
-    portions: "8",
-    ingredients: [
-      { name: "Apples", measurement: "pcs", amount: "5" },
-      { name: "Pie crust", measurement: "pcs", amount: "2" },
-      { name: "Sugar", measurement: "dl", amount: "1" },
-      { name: "Cinnamon", measurement: "tsp", amount: "1" },
-    ],
-    steps: [
-      "Slice the apples and toss with sugar and cinnamon.",
-      "Line a dish with crust, add apples, cover with the second crust.",
-      "Bake at 200°C for 40 minutes.",
-    ],
-    savedAt: "2026-10-09T12:00:00.000Z",
-  },
-];
+const toIngredients = (v: unknown): Ingredient[] =>
+  Array.isArray(v)
+    ? v.map((i) => {
+        const o = (i ?? {}) as Record<string, unknown>;
+        return {
+          name: String(o["name"] ?? ""),
+          measurement: String(o["measurement"] ?? ""),
+          amount: String(o["amount"] ?? ""),
+        };
+      })
+    : [];
 
-export function loadRecipes(): Recipe[] {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw === null) {
-      storeRecipes(DEFAULT_RECIPES);
-      return [...DEFAULT_RECIPES];
-    }
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
+const toSteps = (v: unknown): string[] =>
+  Array.isArray(v) ? v.map((s) => String(s)) : [];
+
+const fromRow = (r: Row): Recipe => ({
+  id: r.id,
+  category: (CATEGORIES as string[]).includes(r.category)
+    ? (r.category as Category)
+    : "meal",
+  name: r.name,
+  rating: r.rating,
+  portions: r.portions,
+  ingredients: toIngredients(r.ingredients),
+  steps: toSteps(r.steps),
+  savedAt: r.saved_at,
+});
+
+const toRow = (r: Recipe) => ({
+  id: r.id,
+  category: r.category,
+  name: r.name,
+  rating: r.rating,
+  portions: r.portions,
+  ingredients: r.ingredients,
+  steps: r.steps,
+  saved_at: r.savedAt,
+});
+
+export async function fetchRecipes(): Promise<Recipe[]> {
+  const { data, error } = await supabase
+    .from("recipes")
+    .select("*")
+    .order("saved_at", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as unknown as Row[]).map(fromRow);
 }
-export function storeRecipes(r: Recipe[]) {
-  localStorage.setItem(KEY, JSON.stringify(r));
+
+export async function upsertRecipe(r: Recipe) {
+  const { error } = await supabase.from("recipes").upsert(toRow(r));
+  if (error) throw error;
+}
+
+export async function saveRating(id: string, rating: number) {
+  const { error } = await supabase.from("recipes").update({ rating }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function removeRecipes(ids: string[]) {
+  if (!ids.length) return;
+  const { error } = await supabase.from("recipes").delete().in("id", ids);
+  if (error) throw error;
+}
+
+/** Live updates: runs the callback whenever any device changes the recipe box. */
+export function onRecipesChanged(cb: () => void) {
+  const channel = supabase
+    .channel("recipes-live")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "recipes" },
+      cb,
+    )
+    .subscribe();
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+// Recipes used to live in this browser only. On the first load, hand anything
+// that was saved there over to the shared recipe box, then remember that it ran.
+const LEGACY_KEY = "recipes.v1";
+const MIGRATED_KEY = "recipes.migrated.v1";
+
+export async function migrateLocalRecipes() {
+  let local: Recipe[] = [];
+  try {
+    if (localStorage.getItem(MIGRATED_KEY)) return;
+    const raw = localStorage.getItem(LEGACY_KEY);
+    local = raw ? (JSON.parse(raw) as Recipe[]) : [];
+  } catch {
+    return;
+  }
+  if (!Array.isArray(local) || local.length === 0) {
+    try {
+      localStorage.setItem(MIGRATED_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    return;
+  }
+  try {
+    const { error } = await supabase.from("recipes").upsert(local.map(toRow));
+    if (error) return;
+    localStorage.setItem(MIGRATED_KEY, "1");
+  } catch {
+    /* try again on the next load */
+  }
 }
 
 export const isIngredientFilled = (i: Ingredient) =>
