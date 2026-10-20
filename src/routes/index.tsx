@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Check, Plus, Star, Trash2, X } from "lucide-react";
 import { CATEGORIES, type Category, type Recipe, loadRecipes, sortRecipes, storeRecipes } from "@/lib/recipes";
 import { AddRecipe } from "@/components/AddRecipe";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { RecipeView } from "@/components/RecipeView";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,6 +25,8 @@ function Index() {
   const [loaded, setLoaded] = useState(false);
   const [category, setCategory] = useState<Category>("meal");
   const [adding, setAdding] = useState(false);
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Recipe | null>(null);
   const [removeMode, setRemoveMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -44,6 +47,33 @@ function Index() {
     n.has(id) ? n.delete(id) : n.add(id);
     setSelected(n);
   };
+
+  const viewing = viewingId ? recipes.find((r) => r.id === viewingId) ?? null : null;
+
+  if (editing)
+    return (
+      <AddRecipe
+        initialCategory={editing.category}
+        initial={editing}
+        onExit={() => setEditing(null)}
+        onSave={(r) => {
+          setRecipes((p) => p.map((x) => (x.id === r.id ? r : x)));
+          setEditing(null);
+        }}
+      />
+    );
+
+  if (viewing)
+    return (
+      <RecipeView
+        recipe={viewing}
+        onClose={() => setViewingId(null)}
+        onEdit={() => setEditing(viewing)}
+        onRate={(n) =>
+          setRecipes((p) => p.map((x) => (x.id === viewing.id ? { ...x, rating: n } : x)))
+        }
+      />
+    );
 
   if (adding)
     return (
@@ -117,8 +147,8 @@ function Index() {
               return (
                 <button
                   key={r.id}
-                  onClick={() => removeMode && toggle(r.id)}
-                  className={`recipe-card ${removeMode ? "cursor-pointer" : "cursor-default"} ${sel ? "ring-2 ring-destructive" : ""}`}
+                  onClick={() => (removeMode ? toggle(r.id) : setViewingId(r.id))}
+                  className={`recipe-card ${removeMode ? "cursor-pointer" : "cursor-pointer"} ${sel ? "ring-2 ring-destructive" : ""}`}
                 >
                   {removeMode && (
                     <span className={`absolute right-3 top-3 flex size-5 items-center justify-center rounded-full border-2 ${sel ? "border-destructive bg-destructive text-destructive-foreground" : "border-muted-foreground"}`}>
