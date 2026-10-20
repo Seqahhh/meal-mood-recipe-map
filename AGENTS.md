@@ -8,3 +8,8 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Rules
+
+- Keep application data in Lovable Cloud rather than browser storage, so the app stays usable from any device.
+- This app is account-free by request: the recipe box is shared by every visitor. Don't gate reads or writes behind a sign-in.
