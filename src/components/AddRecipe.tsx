@@ -14,7 +14,7 @@ const emptyIng = (): Ingredient => ({ name: "", measurement: "", amount: "" });
 
 function move<T>(list: T[], from: number, to: number): T[] {
   const next = [...list];
-  const item = next[from];
+  const item = next[from]!;
   next.splice(from, 1);
   next.splice(to, 0, item);
   return next;
