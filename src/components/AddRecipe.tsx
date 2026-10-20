@@ -79,7 +79,7 @@ export function AddRecipe({
           <span>Category</span>
           <select className="input" value={category} onChange={(e) => setCategory(e.target.value as Category)}>
             {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>
+              <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
             ))}
           </select>
         </label>
