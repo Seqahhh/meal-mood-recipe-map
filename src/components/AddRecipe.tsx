@@ -43,8 +43,7 @@ export function AddRecipe({
   );
   const [confirmExit, setConfirmExit] = useState(false);
   const [error, setError] = useState("");
-  const dragIng = useRef<number | null>(null);
-  const dragStep = useRef<number | null>(null);
+  const drag = useRef<{ kind: "ing" | "step"; idx: number } | null>(null);
 
   const updateIng = (idx: number, field: keyof Ingredient, v: string) => {
     const next = ings.map((i, n) => (n === idx ? { ...i, [field]: v } : i));
@@ -61,16 +60,30 @@ export function AddRecipe({
   const removeStep = (idx: number) =>
     setSteps((p) => (p.length === 1 ? [""] : p.filter((_, n) => n !== idx)));
 
-  const dropIng = (to: number) => {
-    if (dragIng.current !== null && dragIng.current !== to)
-      setIngs((p) => move(p, dragIng.current!, to));
-    dragIng.current = null;
+  const startDrag = (kind: "ing" | "step", idx: number) => (e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.target as Element).setPointerCapture(e.pointerId);
+    drag.current = { kind, idx };
   };
-  const dropStep = (to: number) => {
-    if (dragStep.current !== null && dragStep.current !== to)
-      setSteps((p) => move(p, dragStep.current!, to));
-    dragStep.current = null;
+  const moveDrag = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d) return;
+    const el = document
+      .elementFromPoint(e.clientX, e.clientY)
+      ?.closest<HTMLElement>(d.kind === "ing" ? "[data-ing-idx]" : "[data-step-idx]");
+    if (!el) return;
+    const to = Number(el.dataset.ingIdx ?? el.dataset.stepIdx);
+    if (Number.isNaN(to) || to === d.idx) return;
+    if (d.kind === "ing") {
+      if (to >= ings.length - 1) return; // skip the trailing empty row
+      setIngs((p) => move(p, d.idx, to));
+    } else {
+      if (to >= steps.length - 1) return;
+      setSteps((p) => move(p, d.idx, to));
+    }
+    drag.current = { ...d, idx: to };
   };
+  const endDrag = () => (drag.current = null);
 
   const anyFilled =
     name.trim() || rating > 0 || portions.trim() ||
@@ -152,16 +165,13 @@ export function AddRecipe({
           <h2 className="font-display text-lg">Ingredients</h2>
           <div className="space-y-2 rounded-xl border bg-card p-3">
             {ings.map((i, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => dropIng(idx)}
-              >
+              <div key={idx} data-ing-idx={idx} className="flex items-center gap-2">
                 <span
-                  draggable
-                  onDragStart={() => (dragIng.current = idx)}
-                  className="cursor-grab text-muted-foreground active:cursor-grabbing"
+                  onPointerDown={startDrag("ing", idx)}
+                  onPointerMove={moveDrag}
+                  onPointerUp={endDrag}
+                  onPointerCancel={endDrag}
+                  className="cursor-grab touch-none text-muted-foreground active:cursor-grabbing"
                   aria-label="Drag to reorder"
                 >
                   <GripVertical className="size-4" />
@@ -187,16 +197,13 @@ export function AddRecipe({
         <section className="space-y-2">
           <h2 className="font-display text-lg">Steps</h2>
           {steps.map((s, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-3"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => dropStep(idx)}
-            >
+            <div key={idx} data-step-idx={idx} className="flex items-center gap-3">
               <span
-                draggable
-                onDragStart={() => (dragStep.current = idx)}
-                className="cursor-grab text-muted-foreground active:cursor-grabbing"
+                onPointerDown={startDrag("step", idx)}
+                onPointerMove={moveDrag}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                className="cursor-grab touch-none text-muted-foreground active:cursor-grabbing"
                 aria-label="Drag to reorder"
               >
                 <GripVertical className="size-4" />
