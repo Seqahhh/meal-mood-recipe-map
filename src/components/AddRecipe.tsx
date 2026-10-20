@@ -72,7 +72,7 @@ export function AddRecipe({
       .elementFromPoint(e.clientX, e.clientY)
       ?.closest<HTMLElement>(d.kind === "ing" ? "[data-ing-idx]" : "[data-step-idx]");
     if (!el) return;
-    const to = Number(el.dataset.ingIdx ?? el.dataset.stepIdx);
+    const to = Number(el.dataset["ingIdx"] ?? el.dataset["stepIdx"]);
     if (Number.isNaN(to) || to === d.idx) return;
     if (d.kind === "ing") {
       if (to >= ings.length - 1) return; // skip the trailing empty row
