@@ -1,7 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Check, Plus, Star, Trash2, X } from "lucide-react";
-import { CATEGORIES, type Category, type Recipe, loadRecipes, sortRecipes, storeRecipes } from "@/lib/recipes";
+import {
+  CATEGORIES,
+  type Category,
+  type Recipe,
+  fetchRecipes,
+  migrateLocalRecipes,
+  onRecipesChanged,
+  removeRecipes,
+  saveRating,
+  sortRecipes,
+  upsertRecipe,
+} from "@/lib/recipes";
 import { AddRecipe } from "@/components/AddRecipe";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { RecipeView } from "@/components/RecipeView";
@@ -20,9 +31,12 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+const OFFLINE = "Couldn't reach your recipe box. Check your connection and try again.";
+
 function Index() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState("");
   const [category, setCategory] = useState<Category>("meal");
   const [adding, setAdding] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
@@ -33,8 +47,46 @@ function Index() {
   const [sortBy, setSortBy] = useState<"date" | "rating">("date");
   const [asc, setAsc] = useState(false);
 
-  useEffect(() => { setRecipes(loadRecipes()); setLoaded(true); }, []);
-  useEffect(() => { if (loaded) storeRecipes(recipes); }, [recipes, loaded]);
+  const refresh = useCallback(async () => {
+    try {
+      setRecipes(await fetchRecipes());
+      setError("");
+    } catch {
+      setError(OFFLINE);
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      await migrateLocalRecipes();
+      const list = await fetchRecipes().catch(() => null);
+      if (!active) return;
+      if (list === null) setError(OFFLINE);
+      else setRecipes(list);
+      setLoaded(true);
+    })();
+    const off = onRecipesChanged(() => {
+      if (active) void refresh();
+    });
+    return () => {
+      active = false;
+      off();
+    };
+  }, [refresh]);
+
+  const persist = useCallback(
+    async (write: () => Promise<void>) => {
+      try {
+        await write();
+        setError("");
+      } catch {
+        setError(OFFLINE);
+        await refresh();
+      }
+    },
+    [refresh],
+  );
 
   const shown = useMemo(
     () => sortRecipes(recipes.filter((r) => r.category === category), sortBy, asc),
@@ -59,6 +111,7 @@ function Index() {
         onSave={(r) => {
           setRecipes((p) => p.map((x) => (x.id === r.id ? r : x)));
           setEditing(null);
+          void persist(() => upsertRecipe(r));
         }}
       />
     );
@@ -69,9 +122,11 @@ function Index() {
         recipe={viewing}
         onClose={() => setViewingId(null)}
         onEdit={() => setEditing(viewing)}
-        onRate={(n) =>
-          setRecipes((p) => p.map((x) => (x.id === viewing.id ? { ...x, rating: n } : x)))
-        }
+        onRate={(n) => {
+          const id = viewing.id;
+          setRecipes((p) => p.map((x) => (x.id === id ? { ...x, rating: n } : x)));
+          void persist(() => saveRating(id, n));
+        }}
       />
     );
 
@@ -80,7 +135,12 @@ function Index() {
       <AddRecipe
         initialCategory={category}
         onExit={() => setAdding(false)}
-        onSave={(r) => { setRecipes((p) => [...p, r]); setCategory(r.category); setAdding(false); }}
+        onSave={(r) => {
+          setRecipes((p) => [...p, r]);
+          setCategory(r.category);
+          setAdding(false);
+          void persist(() => upsertRecipe(r));
+        }}
       />
     );
 
@@ -126,6 +186,12 @@ function Index() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6">
+        {error && (
+          <p className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        )}
+
         <div className="mb-5 flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Sort by</span>
           <select className="input w-auto py-1.5" value={sortBy} onChange={(e) => setSortBy(e.target.value as "date" | "rating")}>
@@ -138,7 +204,9 @@ function Index() {
           </button>
         </div>
 
-        {shown.length === 0 ? (
+        {!loaded ? (
+          <p className="py-20 text-center text-muted-foreground">Loading your recipes…</p>
+        ) : shown.length === 0 ? (
           <p className="py-20 text-center text-muted-foreground">No {category} recipes yet. Add your first one!</p>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -173,9 +241,11 @@ function Index() {
         message={`Are you sure you want to delete ${selected.size} recipe${selected.size === 1 ? "" : "s"}?`}
         onNo={() => setConfirmDelete(false)}
         onYes={() => {
+          const ids = [...selected];
           setRecipes((p) => p.filter((r) => !selected.has(r.id)));
           setConfirmDelete(false);
           exitRemove();
+          void persist(() => removeRecipes(ids));
         }}
       />
     </div>
