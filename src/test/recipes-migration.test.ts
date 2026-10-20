@@ -38,7 +38,7 @@ describe("moving browser-only recipes into the shared box", () => {
 
     expect(from).toHaveBeenCalledWith("recipes");
     expect(upsert).toHaveBeenCalledTimes(1);
-    expect(upsert.mock.calls[0][0]).toEqual([
+    expect(upsert.mock.calls[0]?.[0]).toEqual([
       expect.objectContaining({ id: "local-1", name: "Old browser recipe" }),
     ]);
     expect(localStorage.getItem("recipes.migrated.v1")).toBe("1");
